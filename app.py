@@ -29,7 +29,16 @@ def get_prediction():
         return f"Error loading image: {e}", 400
     try:
         pred, pred_idx, probs = learn_inf.predict(pil_image)
-        print(pred)
-        return jsonify({"prediction": pred, "probls": probs[pred_idx].item()})
+        certainty = probs[pred_idx].item()
+        class_names = learn_inf.dls.vocab
+        probabilities = probs.tolist()
+        return jsonify(
+            {
+                "prediction": pred,
+                "certainty": certainty,
+                "classes": [name for name in class_names],
+                "probs": [prob for prob in probabilities],
+            }
+        )
     except Exception as e:
         return f"Error during prediction: {e}", 500
