@@ -9,9 +9,11 @@
     <script>
 
         chart_1 = null;
-        chart_2 = null;
+        chart_over_time = null;
+        class_averages_chart = null;
         confidence_ratings = [];
         confidence_rating_index = [];
+        class_averages = {};
 
         function get_prediction() {
             chart_values([])
@@ -27,6 +29,7 @@
                     certainty_span.innerHTML = parseFloat(json_res.certainty).toFixed(2);
                     chart_values(json_res.classes, json_res.probs);
                     chart_confidence_ratings(json_res.certainty);
+                    chart_averages_fn(json_res.prediction, json_res.certainty)
                 })
             })
         }
@@ -67,11 +70,11 @@
             console.log(confidence_ratings)
             console.log(confidence_rating_index)
 
-            if (chart_2) {
-                chart_2.destroy();
+            if (chart_over_time) {
+                chart_over_time.destroy();
             }
-            var ctx = document.getElementById('chart_2').getContext('2d');
-            chart_2 = new Chart(ctx, {
+            var ctx = document.getElementById('chart_over_time').getContext('2d');
+            chart_over_time = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: confidence_rating_index,
@@ -94,6 +97,60 @@
                 }
             });
         }
+
+        function chart_averages_fn(classification, confidence) {
+            if (class_averages[classification] == null) {
+                class_averages[classification] = {
+                    count: 0,
+                    total: 0,
+                }
+            }
+
+            class_averages[classification].count += 1;
+            class_averages[classification].total += confidence;
+
+            if (class_averages_chart) {
+                class_averages_chart.destroy();
+            }
+
+
+            const keys = Object.keys(class_averages);
+            const values = [];
+
+            console.log("AVERAGES STUFF")
+            console.log(class_averages)
+            console.log(keys)
+            console.log(values)
+
+            for (const key of keys) {
+                values.push(class_averages[key].total / class_averages[key].count);
+            }
+
+            var ctx = document.getElementById('class_averages').getContext('2d');
+            class_averages_chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: keys,
+                    datasets: [{
+                        label: 'Class Averages',
+                        data: values,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 1,
+                            ticks: {
+                                stepSize: .1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         function set_image(url) {
             const image = document.getElementById("chosen_image");
             image.src = url;
@@ -112,7 +169,8 @@
         <img id="chosen_image" src="" />
     </div>
     <div style="height: 400px; width: 1000px; display: flex; flex-direction: row;">
-        <canvas id="chart_2" width="100" height="100"></canvas>
+        <canvas id="class_averages" width="100" height="100"></canvas>
+        <canvas id="chart_over_time" width="100" height="100"></canvas>
     </div>
 </body>
 
